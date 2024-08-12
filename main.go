@@ -68,6 +68,7 @@ func injectPayloadIntoUrl(rawUrl, payload string) (string, error) {
 func main() {
         // Parse command-line arguments
         filePath := flag.String("file", "", "Path to a .txt file containing URLs")
+        singleUrl := flag.String("url", "", "Single URL to inject payloads into")
         numberOfPayloads := flag.Int("number", 1, "Number of XSS payloads to generate")
         verbose := flag.Bool("verbose", false, "Display verbose output")
         flag.Parse()
@@ -78,8 +79,25 @@ func main() {
         // Generate the XSS payloads
         payloads := generateRandomXssPayloads(*numberOfPayloads)
 
-        // Read URLs from file if provided
-        if *filePath != "" {
+        if *singleUrl != "" {
+                // Inject payloads into a single URL
+                if *verbose {
+                        fmt.Printf("Original URL: %s\n", *singleUrl)
+                }
+                for idx, payload := range payloads {
+                        injectedUrl, err := injectPayloadIntoUrl(*singleUrl, payload)
+                        if err != nil {
+                                fmt.Printf("Error injecting payload into URL: %v\n", err)
+                                continue
+                        }
+                        if *verbose {
+                                fmt.Printf("Injected URL %d: %s\n", idx+1, injectedUrl)
+                        } else {
+                                fmt.Println(injectedUrl)
+                        }
+                }
+        } else if *filePath != "" {
+                // Read URLs from file
                 file, err := os.Open(*filePath)
                 if err != nil {
                         fmt.Printf("Error opening file: %v\n", err)
@@ -95,7 +113,7 @@ func main() {
                                 fmt.Printf("Original URL: %s\n", url)
                         }
 
-                        for idx, payload := range payloads {
+                        for _, payload := range payloads {
                                 injectedUrl, err := injectPayloadIntoUrl(url, payload)
                                 if err != nil {
                                         fmt.Printf("Error injecting payload into URL: %v\n", err)
@@ -103,7 +121,7 @@ func main() {
                                 }
 
                                 if *verbose {
-                                        fmt.Printf("Injected URL %d: %s\n", idx+1, injectedUrl)
+                                        fmt.Printf("Injected URL: %s\n", injectedUrl)
                                 } else {
                                         fmt.Println(injectedUrl)
                                 }
@@ -114,9 +132,15 @@ func main() {
                         fmt.Printf("Error reading file: %v\n", err)
                 }
         } else {
-                // Print the payloads if no file is provided
-                for idx, payload := range payloads {
-                        fmt.Printf("Payload %d: %s\n", idx+1, payload)
+                // Print the payloads if no file or URL is provided
+                if *verbose {
+                        for idx, payload := range payloads {
+                                fmt.Printf("Payload %d: %s\n", idx+1, payload)
+                        }
+                } else {
+                        for _, payload := range payloads {
+                                fmt.Println(payload)
+                        }
                 }
         }
 }
